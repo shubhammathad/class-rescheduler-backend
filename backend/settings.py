@@ -1,22 +1,27 @@
-"""
-Django settings for backend project.
-"""
-import pymysql
-# Critical fix for Python 3.14 to bypass mysqlclient version check
-pymysql.version_info = (2, 2, 1, "final", 0)
-pymysql.install_as_MySQLdb()
-
+import os
 from pathlib import Path
+import dj_database_url
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-+tb55+t8dmc1^)*8-$a9ui9%)16ez%3uom0@f36f%j9k8$9fn^'
 
+# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# Add '192.168.1.8' to this list
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2', '192.168.1.8', '192.168.1.9']
+# Add your Render URL to this list
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    '10.0.2.2',
+    '192.168.1.8',
+    '192.168.1.9',
+    'class-rescheduler-backend.onrender.com'
+]
 
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -62,17 +67,34 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'scheduler_db',
-        'USER': 'root',
-        'PASSWORD': '@Sagar1947', # Your verified MySQL password
-        'HOST': 'localhost',
-        'PORT': '3306',
-    }
-}
+# --- DATABASE CONFIGURATION ---
+# This checks if a DATABASE_URL exists (Render). If not, it uses your local MySQL.
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
+if DATABASE_URL:
+    # RENDER / POSTGRES SETTINGS
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
+else:
+    # LOCAL MYSQL SETTINGS
+    # Note: To use this locally, you still need pymysql in your local venv
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'scheduler_db',
+            'USER': 'root',
+            'PASSWORD': '@Sagar1947',
+            'HOST': 'localhost',
+            'PORT': '3306',
+        }
+    }
+
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -80,12 +102,15 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
