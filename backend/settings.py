@@ -36,8 +36,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- MUST be here
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -68,11 +69,9 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 CORS_ALLOW_ALL_ORIGINS = True
 
 # --- DATABASE CONFIGURATION ---
-# This checks if a DATABASE_URL exists (Render). If not, it uses your local MySQL.
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # RENDER / POSTGRES SETTINGS
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
@@ -81,8 +80,6 @@ if DATABASE_URL:
         )
     }
 else:
-    # LOCAL MYSQL SETTINGS
-    # Note: To use this locally, you still need pymysql in your local venv
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -111,6 +108,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# WhiteNoise storage configuration for Render
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
