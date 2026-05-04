@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 import dj_database_url
 
@@ -128,3 +129,21 @@ REST_FRAMEWORK = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- AUTOMATIC SUPERUSER CREATION (For Render Free Tier) ---
+# This runs every time the server starts up
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
+
+@receiver(post_migrate)
+def create_admin_user(sender, **kwargs):
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    # Change these to your preferred credentials
+    username = 'admin'
+    email = 'admin@example.com'
+    password = 'password123'
+    
+    if not User.objects.filter(username=username).exists():
+        User.objects.create_superuser(username, email, password)
+        print(f'==> Superuser "{username}" created successfully!')
