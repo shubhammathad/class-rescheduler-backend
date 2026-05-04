@@ -18,8 +18,7 @@ ALLOWED_HOSTS = [
     '10.0.2.2',
     '192.168.1.8',
     '192.168.1.9',
-    'class-rescheduler-backend.onrender.com',
-    '.onrender.com' # Allows any Render subdomain
+    '.onrender.com' # Allows any Render subdomain to connect
 ]
 
 # Application definition
@@ -70,7 +69,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 CORS_ALLOW_ALL_ORIGINS = True
 
 # --- DATABASE CONFIGURATION ---
-# Render Free Tier fix: Use SQLite if no DATABASE_URL is provided
+# Render Free Tier fix: Use SQLite if no DATABASE_URL environment variable is provided
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
@@ -82,7 +81,7 @@ if DATABASE_URL:
         )
     }
 else:
-    # Use SQLite for Render Free Tier fallback to avoid MySQL driver errors[cite: 1]
+    # Use SQLite for Render Free Tier fallback to avoid MySQL driver errors
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
