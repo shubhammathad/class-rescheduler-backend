@@ -6,10 +6,10 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-+tb55+t8dmc1^)*8-$a9ui9%)16ez%3uom0@f36f%j9k8$9fn^'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-+tb55+t8dmc1^)*8-$a9ui9%)16ez%3uom0@f36f%j9k8$9fn^')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 # Add your Render URL to this list
 ALLOWED_HOSTS = [
@@ -18,7 +18,8 @@ ALLOWED_HOSTS = [
     '10.0.2.2',
     '192.168.1.8',
     '192.168.1.9',
-    'class-rescheduler-backend.onrender.com'
+    'class-rescheduler-backend.onrender.com',
+    '.onrender.com' # Allows any Render subdomain
 ]
 
 # Application definition
@@ -69,6 +70,7 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 CORS_ALLOW_ALL_ORIGINS = True
 
 # --- DATABASE CONFIGURATION ---
+# Render Free Tier fix: Use SQLite if no DATABASE_URL is provided
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
@@ -80,14 +82,11 @@ if DATABASE_URL:
         )
     }
 else:
+    # Use SQLite for Render Free Tier fallback to avoid MySQL driver errors[cite: 1]
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'scheduler_db',
-            'USER': 'root',
-            'PASSWORD': '@Sagar1947',
-            'HOST': 'localhost',
-            'PORT': '3306',
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 
