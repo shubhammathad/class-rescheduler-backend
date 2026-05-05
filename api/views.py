@@ -1,15 +1,18 @@
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User  # Added for populator
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
+from django.http import JsonResponse  # Added for populator
 from django.db import models
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time  # Added time for populator
 
-from .models import Teacher, ClassSession, LeaveRequest
+# Added Department and Subject for populator
+from .models import Teacher, ClassSession, LeaveRequest, Department, Subject
 from .serializers import TeacherSerializer
 
 # --- 1. AUTHENTICATION ---
@@ -121,3 +124,78 @@ def hod_action(request, request_id):
     req.status = 'APPROVED_OPEN'
     req.save()
     return Response({"message": "Approved"})
+
+
+# --- 5. POPULATE DATABASE (SECRET ENDPOINT) ---
+@api_view(['GET'])
+@permission_classes([AllowAny]) # We allow anyone to hit this URL to reset the data quickly
+def populate_database_view(request):
+    """
+    A secret endpoint to populate the live Render SQLite database.
+    Visiting this URL will wipe old data and create the fresh test data.
+    """
+    try:
+        # 1. Clear Data
+        ClassSession.objects.all().delete()
+        Teacher.objects.all().delete()
+        Subject.objects.all().delete()
+        Department.objects.all().delete()
+        User.objects.filter(username__startswith="teacher").delete()
+
+        # 2. Create Department
+        ece = Department.objects.create(name="Electronics & Comm", code="ECE")
+
+        # 3. Create Subjects
+        subjects_data = [
+            ("Network Analysis", "EC301"),
+            ("Analog Circuits", "EC302"),
+            ("Control Systems", "EC501"),
+            ("VLSI Design", "EC502"),
+            ("Embedded Systems", "EC701"),
+            ("Artificial Intel", "EC702")
+        ]
+        
+        db_subjects = []
+        for name, code in subjects_data:
+            sub = Subject.objects.create(name=name, code=code, department=ece)
+            db_subjects.append(sub)
+
+        # 4. Create 10 Teachers
+        for i in range(1, 11):
+            username = f"teacher{i}"
+            user = User.objects.create_user(username=username, password="password123")
+            is_hod = (i == 10)
+            
+            teacher = Teacher.objects.create(user=user, department=ece, is_hod=is_hod)
+            
+            if i <= 3:
+                teacher.subjects.add(db_subjects[0], db_subjects[1])
+            elif i <= 6:
+                teacher.subjects.add(db_subjects[2], db_subjects[3])
+            elif i <= 9:
+                teacher.subjects.add(db_subjects[4], db_subjects[5])
+            else:
+                teacher.subjects.add(db_subjects[3], db_subjects[5])
+            teacher.save()
+
+        # 5. Create a "Monday Morning" Schedule
+        target_time = time(10, 0)
+        monday = "Monday" 
+        busy_indices = [1, 2, 4, 7, 10] 
+        
+        for i in busy_indices:
+            t_obj = Teacher.objects.get(user__username=f"teacher{i}")
+            sub = t_obj.subjects.first() 
+            ClassSession.objects.create(
+                teacher=t_obj,
+                subject=sub,
+                day=monday,
+                start_time=target_time,
+                end_time=time(11, 0),
+                room_number=f"Room-{100+i}"
+            )
+
+        return JsonResponse({"status": "Success", "message": "Database fully populated with test data!"})
+
+    except Exception as e:
+        return JsonResponse({"status": "Error", "message": str(e)}, status=500)
