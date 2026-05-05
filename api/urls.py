@@ -20,4 +20,8 @@ urlpatterns = [
 
     # --- 4. HOD ACTION ---
     path('schedule/requests/<int:request_id>/hod-action/', views.hod_action, name='hod-action'),
+
+    # --- 5. POPULATE DATABASE (SECRET ENDPOINT) ---
+    # Visit https://queno-backend.onrender.com/api/secret-populate/ to trigger
+    path('secret-populate/', views.populate_database_view, name='secret-populate'),
 ]
